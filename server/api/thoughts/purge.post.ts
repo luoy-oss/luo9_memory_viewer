@@ -9,6 +9,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing db_name' })
   }
 
+  console.log(`[purge] 清理过期记忆: db=${db_name}`)
+
   // 从 registry 获取公钥验签
   const regCol = await getRegistryCollection()
   const entry = await regCol.findOne({ db_name })
@@ -25,5 +27,6 @@ export default defineEventHandler(async (event) => {
     deleted_at: { $lt: cutoff },
   })
 
+  console.log(`[purge] 清理完成: ${result.deletedCount} 条`)
   return { purged: result.deletedCount }
 })

@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   console.log('[bulk-sync] 收到请求')
   const body = await readBody(event)
   const { db_name, thoughts } = body
-  console.log('[bulk-sync] db_name:', db_name, 'thoughts:', Array.isArray(thoughts) ? thoughts.length : 'N/A')
+  console.log(`[bulk-sync] db_name: ${db_name}, thoughts: ${Array.isArray(thoughts) ? thoughts.length : 'N/A'}`)
 
   if (!db_name) {
     throw createError({ statusCode: 400, message: 'Missing db_name' })
@@ -61,5 +61,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  console.log(`[bulk-sync] 完成: inserted=${inserted}, skipped=${skipped}, total=${thoughts.length}`)
   return { inserted, skipped, total: thoughts.length }
 })

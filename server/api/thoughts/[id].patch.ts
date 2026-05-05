@@ -19,6 +19,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing db_name' })
   }
 
+  console.log(`[patch] 恢复: id=${id}, db=${db_name}`)
+
   // 从 registry 获取公钥验签
   const regCol = await getRegistryCollection()
   const entry = await regCol.findOne({ db_name })
@@ -44,6 +46,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: 'Thought not found or not deleted' })
     }
 
+    console.log(`[patch] 恢复成功: id=${id}`)
     return { success: true, id }
   } catch (err: any) {
     if (err.statusCode) throw err

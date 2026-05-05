@@ -14,6 +14,8 @@ export default defineEventHandler(async (event) => {
   const includeDeleted = query.include_deleted === 'true'
   const deletedOnly = query.deleted_only === 'true'
 
+  console.log(`[thoughts.get] 查询: db=${dbName}, page=${page}, limit=${limit}, category=${category || 'all'}`)
+
   const col = await getThoughtsCollection(dbName)
 
   const filter: any = {}
@@ -33,6 +35,8 @@ export default defineEventHandler(async (event) => {
     .skip((page - 1) * limit)
     .limit(limit)
     .toArray()
+
+  console.log(`[thoughts.get] 返回 ${thoughts.length}/${total} 条`)
 
   return {
     thoughts: thoughts.map(t => ({

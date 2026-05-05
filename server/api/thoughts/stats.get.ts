@@ -8,6 +8,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing db parameter' })
   }
 
+  console.log(`[stats.get] 查询统计: db=${dbName}`)
+
   const col = await getThoughtsCollection(dbName)
 
   const [active, deleted, byCategory] = await Promise.all([
@@ -28,6 +30,8 @@ export default defineEventHandler(async (event) => {
   for (const item of byCategory) {
     categories[item._id] = item.count
   }
+
+  console.log(`[stats.get] 结果: active=${active}, deleted=${deleted}`)
 
   return {
     total: active,

@@ -13,6 +13,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing db_name' })
   }
 
+  console.log(`[search] 搜索: keyword="${keyword}", action=${action}, db=${db_name}`)
+
   // 从 registry 获取公钥验签
   const regCol = await getRegistryCollection()
   const entry = await regCol.findOne({ db_name })
@@ -35,10 +37,12 @@ export default defineEventHandler(async (event) => {
         deleted_at: Date.now(),
       },
     })
+    console.log(`[search] 软删除 ${result.modifiedCount} 条`)
     return { deleted: result.modifiedCount }
   }
 
   const results = await col.find(filter).sort({ created: 1 }).limit(50).toArray()
+  console.log(`[search] 找到 ${results.length} 条`)
   return {
     thoughts: results.map(t => ({
       id: t._id?.toString(),

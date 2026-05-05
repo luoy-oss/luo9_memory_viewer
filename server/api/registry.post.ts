@@ -14,8 +14,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing public_key (required for first registration)' })
   }
 
+  console.log(`[registry.post] 注册请求: db_name=${db_name}, display_name=${display_name}`)
+
   // 先用传入的 mongodb_uri 建立 bootstrap 连接（首次注册时必需）
   await bootstrapWithUri(mongodb_uri)
+  console.log('[registry.post] MongoDB 连接成功')
 
   // 如果已有该 db_name 的记录且有公钥，验证签名（防止篡改）
   const regCol = await getRegistryCollection()
@@ -23,6 +26,7 @@ export default defineEventHandler(async (event) => {
   if (existing?.public_key) {
     try {
       verifyRequestSignature(event, existing.public_key)
+      console.log(`[registry.post] 签名验证通过: ${db_name}`)
     } catch {
       // 签名验证失败：可能是密钥轮换（pem 文件重新生成）
       // 回退验证：用 mongodb_uri 证明数据库所有权
@@ -30,6 +34,7 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 403, message: 'Invalid signature and mongodb_uri mismatch' })
       }
       // mongodb_uri 匹配 → 允许更新公钥（密钥恢复）
+      console.log(`[registry.post] 签名验证失败但 URI 匹配，允许密钥恢复: ${db_name}`)
     }
   }
 
@@ -48,5 +53,6 @@ export default defineEventHandler(async (event) => {
     { upsert: true },
   )
 
+  console.log(`[registry.post] 注册成功: ${db_name}`)
   return { success: true }
 })

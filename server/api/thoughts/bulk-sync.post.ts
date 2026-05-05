@@ -2,20 +2,25 @@ import { getThoughtsCollection, getRegistryCollection } from '~/server/utils/mon
 import { verifyRequestSignature } from '~/server/utils/crypto'
 
 export default defineEventHandler(async (event) => {
+  console.log('[bulk-sync] 收到请求')
   const body = await readBody(event)
   const { db_name, thoughts } = body
+  console.log('[bulk-sync] db_name:', db_name, 'thoughts:', Array.isArray(thoughts) ? thoughts.length : 'N/A')
 
   if (!db_name) {
     throw createError({ statusCode: 400, message: 'Missing db_name' })
   }
 
   // 从 registry 获取公钥验签
+  console.log('[bulk-sync] 获取 registry...')
   const regCol = await getRegistryCollection()
   const entry = await regCol.findOne({ db_name })
   if (!entry?.public_key) {
     throw createError({ statusCode: 403, message: 'No public key registered for this db' })
   }
+  console.log('[bulk-sync] 验证签名...')
   verifyRequestSignature(event, entry.public_key)
+  console.log('[bulk-sync] 签名验证通过')
 
   if (!Array.isArray(thoughts)) {
     throw createError({ statusCode: 400, message: 'thoughts must be an array' })

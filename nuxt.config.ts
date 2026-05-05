@@ -21,7 +21,6 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    mongodbUri: process.env.MONGODB_URI || '',
     public: {},
   },
 

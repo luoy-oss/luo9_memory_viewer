@@ -14,33 +14,26 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing public_key (required for first registration)' })
   }
 
+  // 先用传入的 mongodb_uri 建立 bootstrap 连接（首次注册时必需）
+  await bootstrapWithUri(mongodb_uri)
+
   // 如果已有该 db_name 的记录且有公钥，验证签名（防止篡改）
-  const regCol = await getRegistryCollection().catch(() => null)
-  if (regCol) {
-    const existing = await regCol.findOne({ db_name }).catch(() => null)
-    if (existing?.public_key) {
-      try {
-        verifyRequestSignature(event, existing.public_key)
-      } catch {
-        // 签名验证失败：可能是密钥轮换（pem 文件重新生成）
-        // 回退验证：用 mongodb_uri 证明数据库所有权
-        if (existing.mongodb_uri !== mongodb_uri) {
-          throw createError({ statusCode: 403, message: 'Invalid signature and mongodb_uri mismatch' })
-        }
-        // mongodb_uri 匹配 → 允许更新公钥（密钥恢复）
+  const regCol = await getRegistryCollection()
+  const existing = await regCol.findOne({ db_name }).catch(() => null)
+  if (existing?.public_key) {
+    try {
+      verifyRequestSignature(event, existing.public_key)
+    } catch {
+      // 签名验证失败：可能是密钥轮换（pem 文件重新生成）
+      // 回退验证：用 mongodb_uri 证明数据库所有权
+      if (existing.mongodb_uri !== mongodb_uri) {
+        throw createError({ statusCode: 403, message: 'Invalid signature and mongodb_uri mismatch' })
       }
+      // mongodb_uri 匹配 → 允许更新公钥（密钥恢复）
     }
   }
 
-  // Bootstrap if MONGODB_URI env var was not set
-  try {
-    await bootstrapWithUri(mongodb_uri)
-  } catch {
-    // Already bootstrapped, ignore
-  }
-
-  const col = await getRegistryCollection()
-  await col.updateOne(
+  await regCol.updateOne(
     { db_name },
     {
       $set: {

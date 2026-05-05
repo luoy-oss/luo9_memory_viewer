@@ -1,7 +1,14 @@
 import { getRegistryCollection, getThoughtsCollection } from '~/server/utils/mongodb'
 
 export default defineEventHandler(async () => {
-  const col = await getRegistryCollection()
+  let col
+  try {
+    col = await getRegistryCollection()
+  } catch {
+    // MongoDB 未连接（首次注册前），返回空列表
+    return []
+  }
+
   const entries = await col.find({}).toArray()
 
   const results = []

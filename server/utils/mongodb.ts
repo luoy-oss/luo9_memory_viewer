@@ -1,6 +1,6 @@
 import { MongoClient, type Db, type Collection } from 'mongodb'
 
-// Bootstrap client for registry lookups
+// Bootstrap client for registry lookups (由首次 POST /api/registry 时通过 bootstrapWithUri 设置)
 let bootstrapClient: MongoClient | null = null
 let bootstrapUri: string | null = null
 const clientCache = new Map<string, MongoClient>()
@@ -39,34 +39,22 @@ async function getClientForUri(uri: string): Promise<MongoClient> {
 
 /**
  * 获取 bootstrap 客户端
- * 优先使用 MONGODB_URI 环境变量
- * 如果未设置，使用首次注册时传入的 URI
+ * 仅通过插件首次注册时调用 bootstrapWithUri() 设置
+ * 不再依赖环境变量
  */
 export async function getBootstrapClient(): Promise<MongoClient> {
   if (bootstrapClient) return bootstrapClient
-
-  // 尝试从环境变量获取
-  const config = useRuntimeConfig()
-  const envUri = config.mongodbUri
-  if (envUri) {
-    bootstrapClient = new MongoClient(envUri)
-    await bootstrapClient.connect()
-    bootstrapUri = envUri
-    return bootstrapClient
-  }
-
-  // 尝试从已有注册记录获取（启动时可能已有数据）
-  // 这里不能递归，所以直接抛出错误提示
-  throw new Error('MONGODB_URI not set and no bootstrap URI available. First registration will bootstrap.')
+  throw new Error('MongoDB not bootstrapped. Waiting for first plugin registration via POST /api/registry.')
 }
 
 /**
- * 用指定 URI 初始化 bootstrap 连接（首次注册时调用）
+ * 用指定 URI 初始化 bootstrap 连接（插件注册时调用）
  */
 export async function bootstrapWithUri(uri: string): Promise<void> {
   if (bootstrapClient) return
-  bootstrapClient = new MongoClient(uri)
-  await bootstrapClient.connect()
+  const client = new MongoClient(uri)
+  await client.connect()
+  bootstrapClient = client
   bootstrapUri = uri
 }
 

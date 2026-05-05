@@ -4,9 +4,8 @@ export default defineEventHandler(async () => {
   let col
   try {
     col = await getRegistryCollection()
-  } catch {
-    // MongoDB 未连接（首次注册前），返回空列表
-    console.log('[registry.get] MongoDB 未连接，返回空列表')
+  } catch (e: any) {
+    console.log('[registry.get] MongoDB 未连接，返回空列表:', e.message)
     return []
   }
 

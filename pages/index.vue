@@ -16,6 +16,18 @@ async function fetchRegistry() {
   } catch {
     registries.value = []
   }
+
+  // 如果返回空，可能是插件还没注册，自动重试
+  if (registries.value.length === 0) {
+    for (let i = 0; i < 5; i++) {
+      await new Promise(r => setTimeout(r, 3000))
+      try {
+        registries.value = await $fetch<RegistryEntry[]>('/api/registry')
+      } catch { /* ignore */ }
+      if (registries.value.length > 0) break
+    }
+  }
+
   registryLoaded.value = true
 
   // Auto-select if only one

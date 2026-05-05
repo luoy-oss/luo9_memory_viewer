@@ -1,8 +1,7 @@
 import { MongoClient, type Db, type Collection } from 'mongodb'
 
-// Bootstrap client for registry lookups (由首次 POST /api/registry 时通过 bootstrapWithUri 设置)
-let bootstrapClient: MongoClient | null = null
-let bootstrapUri: string | null = null
+// Page's own MongoDB client (from NUXT_MONGODB_URI env var)
+let pageClient: MongoClient | null = null
 const clientCache = new Map<string, MongoClient>()
 const dbCache = new Map<string, Db>()
 
@@ -27,7 +26,20 @@ export interface RegistryEntry {
   registered_at: string
 }
 
-/** 获取或创建 MongoClient（按 URI 缓存） */
+/** 获取页面自己的 MongoDB 连接（NUXT_MONGODB_URI） */
+async function getPageClient(): Promise<MongoClient> {
+  if (pageClient) return pageClient
+  const uri = useRuntimeConfig().mongodbUri as string
+  if (!uri) {
+    throw new Error('NUXT_MONGODB_URI is not configured. Set it in Vercel environment variables or .env file.')
+  }
+  const client = new MongoClient(uri)
+  await client.connect()
+  pageClient = client
+  return client
+}
+
+/** 获取或创建 MongoClient（按 URI 缓存，用于连接 bot 数据库） */
 async function getClientForUri(uri: string): Promise<MongoClient> {
   if (clientCache.has(uri)) return clientCache.get(uri)!
 
@@ -37,34 +49,13 @@ async function getClientForUri(uri: string): Promise<MongoClient> {
   return client
 }
 
-/**
- * 获取 bootstrap 客户端
- * 仅通过插件首次注册时调用 bootstrapWithUri() 设置
- * 不再依赖环境变量
- */
-export async function getBootstrapClient(): Promise<MongoClient> {
-  if (bootstrapClient) return bootstrapClient
-  throw new Error('MongoDB not bootstrapped. Waiting for first plugin registration via POST /api/registry.')
-}
-
-/**
- * 用指定 URI 初始化 bootstrap 连接（插件注册时调用）
- */
-export async function bootstrapWithUri(uri: string): Promise<void> {
-  if (bootstrapClient) return
-  const client = new MongoClient(uri)
-  await client.connect()
-  bootstrapClient = client
-  bootstrapUri = uri
-}
-
-/** 获取 registry 集合 */
+/** 获取 registry 集合（存在页面自己的 MongoDB 里） */
 export async function getRegistryCollection(): Promise<Collection<RegistryEntry>> {
-  const client = await getBootstrapClient()
+  const client = await getPageClient()
   return client.db('memory_viewer_shared').collection<RegistryEntry>('registry')
 }
 
-/** 根据 db_name 从 registry 查找 URI，连接对应数据库 */
+/** 根据 db_name 从 registry 查找 URI，连接对应 bot 数据库 */
 export async function getThoughtsCollection(dbName: string): Promise<Collection<Thought>> {
   const cacheKey = `thoughts_${dbName}`
   if (dbCache.has(cacheKey)) {

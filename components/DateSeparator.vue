@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   date: string
+  dateKey?: string
 }>()
 
 const el = ref<HTMLElement>()
@@ -21,7 +22,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="el" class="date-separator" :class="{ visible }">
+  <div ref="el" :id="dateKey ? `date-${dateKey}` : undefined" class="date-separator" :class="{ visible }">
     <span class="date-label">{{ date }}</span>
   </div>
 </template>

@@ -47,6 +47,13 @@ function onToggleFloat(enabled: boolean) {
   barrageRef.value?.toggleFloat(enabled)
 }
 
+function onCalendarJump(dateKey: string) {
+  const el = document.getElementById(`date-${dateKey}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
 onMounted(() => {
   fetchRegistry()
 })
@@ -126,6 +133,9 @@ onMounted(() => {
 
     <!-- Controls -->
     <ScrollControls v-if="selectedDb" @toggle-float="onToggleFloat" />
+
+    <!-- Calendar -->
+    <CalendarDrawer v-if="selectedDb" :thoughts="thoughts" @jump="onCalendarJump" />
   </div>
 </template>
 

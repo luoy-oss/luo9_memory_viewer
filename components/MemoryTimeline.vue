@@ -23,6 +23,7 @@ type TimelineItem = {
   type: 'date'
   key: string
   date: string
+  dateKey: string
   ts: number
 } | {
   type: 'thought'
@@ -43,6 +44,7 @@ const timelineItems = computed(() => {
         type: 'date',
         key: `date-${dk}`,
         date: dateLabel(t.created),
+        dateKey: dk,
         ts: t.created,
       })
     }
@@ -62,7 +64,7 @@ const timelineItems = computed(() => {
   <div class="timeline">
     <template v-if="!loading">
       <template v-for="item in timelineItems" :key="item.key">
-        <DateSeparator v-if="item.type === 'date'" :date="item.date" />
+        <DateSeparator v-if="item.type === 'date'" :date="item.date" :date-key="item.dateKey" />
         <MemoryCard
           v-else
           :thought="item.thought"

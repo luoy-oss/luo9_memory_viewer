@@ -1,4 +1,4 @@
-import { getRegistryCollection, bootstrapWithUri } from '~/server/utils/mongodb'
+import { getRegistryCollection } from '~/server/utils/mongodb'
 import { verifyRequestSignature } from '~/server/utils/crypto'
 
 export default defineEventHandler(async (event) => {
@@ -15,10 +15,6 @@ export default defineEventHandler(async (event) => {
   }
 
   console.log(`[registry.post] 注册请求: db_name=${db_name}, display_name=${display_name}`)
-
-  // 先用传入的 mongodb_uri 建立 bootstrap 连接（首次注册时必需）
-  await bootstrapWithUri(mongodb_uri)
-  console.log('[registry.post] MongoDB 连接成功')
 
   // 如果已有该 db_name 的记录且有公钥，验证签名（防止篡改）
   const regCol = await getRegistryCollection()

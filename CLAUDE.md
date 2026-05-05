@@ -7,13 +7,16 @@ Nuxt 3 全栈应用，展示 AI 自我反思记忆的时间轴页面。配合 Ru
 ## 架构概览
 
 ```
-[Rust Plugin] --POST + ECDSA签名--> [Nuxt 3 API] <---> [MongoDB Atlas]
+[Rust Plugin] --POST + ECDSA签名--> [Nuxt 3 API] <---> [页面 MongoDB (registry)]
+                                      |        ^
+                                      |        |
+                                      +-------> [Bot MongoDB (thoughts)]
                                           ^
                                           |
                                     [浏览器前端] (只读浏览)
 ```
 
-**核心设计**：MongoDB 连接不依赖环境变量，由插件首次 `POST /api/registry` 时通过 `mongodb_uri` 动态引导（bootstrap）。浏览器端只读无需认证，所有写操作需 ECDSA-P256 签名。
+**核心设计**：页面通过 `NUXT_MONGODB_URI` 环境变量连接自己的 MongoDB，存储注册表（registry）。插件注册时传入 `mongodb_uri`，页面用该 URI 连接 bot 数据库读取 thoughts。浏览器端只读无需认证，所有写操作需 ECDSA-P256 签名。
 
 ## 文件结构
 
@@ -31,12 +34,13 @@ memory-viewer/
 │   ├── BarrageLayer.vue           # 弹幕浮动文字层，10条赛道，最多16条并发
 │   ├── ScrollControls.vue         # 右侧控制栏：自动滚动/弹幕开关/速度(龟/走/兔)
 │   ├── ScrollProgress.vue         # 顶部进度条 + 回到顶部按钮
-│   └── StatsCounter.vue           # 分类计数统计行
+│   ├── StatsCounter.vue           # 分类计数统计行
+│   └── CalendarDrawer.vue         # 右侧抽屉日历，按日显示记忆数量，点击跳转
 ├── composables/
 │   └── useThoughts.ts             # 客户端 composable：类型定义、状态管理、API 请求
 ├── server/
 │   ├── utils/
-│   │   ├── mongodb.ts             # MongoDB 连接管理（bootstrap + 双层缓存）
+│   │   ├── mongodb.ts             # MongoDB 连接管理（页面DB + bot DB 双层缓存）
 │   │   └── crypto.ts              # ECDSA-P256 签名验证
 │   └── api/
 │       ├── registry.get.ts        # GET  注册表列表（无需认证）
@@ -58,7 +62,7 @@ memory-viewer/
 | Method | Path | 认证 | 说明 |
 |--------|------|------|------|
 | GET | `/api/registry` | 无 | 列出所有已暴露的记忆空间 + 计数 |
-| POST | `/api/registry` | 签名/URI | 插件注册，传递 mongodb_uri 引导连接 |
+| POST | `/api/registry` | 签名/URI | 插件注册，传递 mongodb_uri 存入页面 DB |
 
 ### 想法操作
 
@@ -74,11 +78,13 @@ memory-viewer/
 
 ## MongoDB 连接模式
 
-`server/utils/mongodb.ts` 实现三层连接架构：
+`server/utils/mongodb.ts` 实现双层连接架构：
 
-1. **Bootstrap Client** — 由插件首次 `POST /api/registry` 时调用 `bootstrapWithUri(uri)` 建立，用于访问 `memory_viewer_shared.registry` 集合。无环境变量依赖。
-2. **Per-URI Client Cache** — `Map<string, MongoClient>` 按 URI 缓存连接，`getClientForUri(uri)` 复用或新建。
-3. **Per-DB Cache** — `Map<string, Db>` 按 `thoughts_{dbName}` 缓存，`getThoughtsCollection(dbName)` 查 registry 获取 URI 后连接。
+1. **Page Client** — 通过 `NUXT_MONGODB_URI` 环境变量连接页面自己的 MongoDB，用于访问 `memory_viewer_shared.registry` 集合。`getPageClient()` 单例复用。
+2. **Per-URI Client Cache** — `Map<string, MongoClient>` 按 URI 缓存 bot 数据库连接，`getClientForUri(uri)` 复用或新建。
+3. **Per-DB Cache** — `Map<string, Db>` 按 `thoughts_{dbName}` 缓存，`getThoughtsCollection(dbName)` 查 registry 获取 bot URI 后连接。
+
+环境变量：`NUXT_MONGODB_URI`（Vercel 或 `.env` 设置）
 
 ## 签名认证
 
@@ -102,7 +108,8 @@ index.vue (状态管理 + 注册表选择)
   ├── MemoryTimeline      时间轴主体
   │     ├── DateSeparator   日期分隔（IntersectionObserver 淡入）
   │     └── MemoryCard      记忆卡片（打字机 + 淡入动画，左右交替）
-  └── ScrollControls      右侧固定控制栏（延迟1.8s出现）
+  ├── ScrollControls      右侧固定控制栏（延迟1.8s出现）
+  └── CalendarDrawer      右侧抽屉日历（📅按钮切换，按日记忆数，点击跳转）
 ```
 
 ## 数据模型
@@ -122,7 +129,7 @@ index.vue (状态管理 + 注册表选择)
 
 索引：`{content: 1, created: 1}` unique（防重）、`{deleted: 1, created: -1}`（主列表查询）
 
-### MongoDB Schema — `registry` 集合（`memory_viewer_shared` 库）
+### MongoDB Schema — `registry` 集合（页面自己的 `memory_viewer_shared` 库）
 
 ```json
 {
@@ -152,7 +159,7 @@ index.vue (状态管理 + 注册表选择)
 | `mongodb` ^6.13.0 | MongoDB Node.js 驱动 |
 | `@noble/curves` ^2.2.0 | ECDSA-P256 签名验证 |
 
-部署目标：Vercel（`vercel.json` 配置 `framework: nuxtjs`），无需环境变量。
+部署目标：Vercel（`vercel.json` 配置 `framework: nuxtjs`），需设置环境变量 `NUXT_MONGODB_URI`（页面自己的 MongoDB 连接串）。
 
 ## Composable — `useThoughts()`
 

@@ -32,7 +32,7 @@ memory-viewer/
 │   ├── DateSeparator.vue          # 日期分隔标签，IntersectionObserver 淡入
 │   ├── MemoryCard.vue             # 记忆卡片：打字机效果(38ms/字)、左右交替、分类配色
 │   ├── BarrageLayer.vue           # 弹幕浮动文字层，10条赛道，最多16条并发
-│   ├── ScrollControls.vue         # 右侧控制栏：自动滚动/弹幕开关/速度(龟/走/兔)
+│   ├── ScrollControls.vue         # 右侧控制栏：弹幕开关
 │   ├── ScrollProgress.vue         # 顶部进度条 + 回到顶部按钮
 │   ├── StatsCounter.vue           # 分类计数统计行
 │   └── CalendarDrawer.vue         # 右侧抽屉日历，按日显示记忆数量，点击跳转
@@ -176,4 +176,4 @@ index.vue (状态管理 + 注册表选择)
 - Nuxt dev 模式下会报 `#app-manifest` 预变换错误，不影响功能
 - 弹幕层最多 16 条并发，10 条水平赛道避免重叠
 - 打字机效果 38ms/字符，由 IntersectionObserver 首次可见时触发
-- 自动滚动在用户 wheel/touch 交互时自动停止
+- 打字机效果会在组件卸载时清理所有定时器

@@ -55,4 +55,18 @@ const categories = ['feeling', 'reflection', 'experience', 'plan'] as const
 .counter-item.experience .num { color: #6BCB9B; }
 .counter-item.plan .num { color: #F5A673; }
 .total-num { color: var(--text) !important; }
+
+@media (max-width: 768px) {
+  .counter {
+    gap: 10px;
+    padding: 0 12px 30px;
+  }
+  .counter-item {
+    padding: 10px 14px;
+    min-width: 60px;
+    border-radius: 12px;
+  }
+  .counter-item .num { font-size: 1.2rem; }
+  .counter-item .label { font-size: 0.6rem; }
+}
 </style>

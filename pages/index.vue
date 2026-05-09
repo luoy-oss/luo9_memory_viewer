@@ -50,7 +50,9 @@ function onToggleFloat(enabled: boolean) {
 function onCalendarJump(dateKey: string) {
   const el = document.getElementById(`date-${dateKey}`)
   if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const rect = el.getBoundingClientRect()
+    const targetY = window.scrollY + rect.top - window.innerHeight / 3
+    window.scrollTo({ top: targetY, behavior: 'smooth' })
   }
 }
 
@@ -365,6 +367,30 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .header {
+    padding: 50px 16px 24px;
+  }
   .header h1 { font-size: 1.8rem; }
+  .header .subtitle { font-size: 0.8rem; }
+
+  .db-select-wrap { padding: 24px 16px 60px; }
+  .db-list { gap: 12px; }
+  .db-card {
+    padding: 18px 24px;
+    min-width: 120px;
+    border-radius: 16px;
+  }
+  .db-card-icon { font-size: 1.6rem; }
+  .db-card-name { font-size: 0.85rem; }
+
+  .selected-bar { padding: 0 16px 16px; }
+
+  .bg-deco .c1 { width: 250px; height: 250px; }
+  .bg-deco .c2 { width: 150px; height: 150px; }
+  .bg-deco .c3 { width: 120px; height: 120px; }
+  .bg-deco .c4 { width: 180px; height: 180px; }
+
+  .footer { padding: 30px 16px 50px; }
+  .footer .end-mark { font-size: 0.9rem; letter-spacing: 2px; }
 }
 </style>

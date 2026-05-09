@@ -6,10 +6,11 @@ const props = defineProps<{
 
 const el = ref<HTMLElement>()
 const visible = ref(false)
+let observer: IntersectionObserver | null = null
 
 onMounted(() => {
   if (!el.value) return
-  const observer = new IntersectionObserver(
+  observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         visible.value = entry.isIntersecting
@@ -18,6 +19,10 @@ onMounted(() => {
     { threshold: 0.15 },
   )
   observer.observe(el.value)
+})
+
+onUnmounted(() => {
+  observer?.disconnect()
 })
 </script>
 
@@ -53,5 +58,10 @@ onMounted(() => {
   letter-spacing: 2px;
   position: relative;
   z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .date-separator { margin: 30px 0 20px; }
+  .date-label { padding: 5px 18px; font-size: 0.75rem; letter-spacing: 1px; }
 }
 </style>

@@ -133,8 +133,10 @@ function jumpToToday() {
 
 function selectDay(day: CalendarDay) {
   if (day.isFuture || day.count === 0) return
-  emit('jump', day.dateKey)
+  const dateKey = day.dateKey
   open.value = false
+  // 等待抽屉关闭动画结束后再跳转，避免布局变化干扰滚动位置
+  setTimeout(() => emit('jump', dateKey), 400)
 }
 
 function toggle() {
@@ -445,13 +447,18 @@ watch(() => props.thoughts, (t) => {
 /* Mobile */
 @media (max-width: 768px) {
   .calendar-drawer {
-    width: 300px;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 20px 16px;
   }
   .calendar-toggle {
-    bottom: 90px;
-    right: 16px;
+    bottom: 80px;
+    right: 12px;
     width: 42px;
     height: 42px;
   }
+  .day-cell { border-radius: 10px; }
+  .day-num { font-size: 0.7rem; }
+  .day-count { font-size: 0.5rem; }
 }
 </style>

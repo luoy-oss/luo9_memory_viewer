@@ -74,6 +74,16 @@ onUnmounted(() => {
   transform: translateY(-2px);
 }
 
+@media (max-width: 768px) {
+  .back-top {
+    width: 40px;
+    height: 40px;
+    bottom: 20px;
+    right: 12px;
+    font-size: 1rem;
+  }
+}
+
 .pop-enter-active, .pop-leave-active {
   transition: all 0.3s ease;
 }

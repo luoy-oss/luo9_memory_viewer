@@ -16,6 +16,20 @@ const cursorActive = ref(false)
 const side = computed(() => props.index % 2 === 0 ? 'left' : 'right')
 const catInfo = computed(() => CATEGORY_MAP[props.thought.category] || CATEGORY_MAP.feeling)
 
+let observer: IntersectionObserver | null = null
+const pendingTimers: ReturnType<typeof setTimeout>[] = []
+
+function scheduleTimer(fn: () => void, ms: number) {
+  const id = setTimeout(fn, ms)
+  pendingTimers.push(id)
+  return id
+}
+
+function clearTimers() {
+  for (const id of pendingTimers) clearTimeout(id)
+  pendingTimers.length = 0
+}
+
 function formatDate(ts: number) {
   const d = new Date(ts * 1000)
   const m = d.getMonth() + 1
@@ -36,9 +50,9 @@ function typewrite() {
     if (i < text.length) {
       textContent.value += text[i]
       i++
-      setTimeout(type, 38)
+      scheduleTimer(type, 38)
     } else {
-      setTimeout(() => { cursorActive.value = false }, 2000)
+      scheduleTimer(() => { cursorActive.value = false }, 2000)
     }
   }
   type()
@@ -46,17 +60,17 @@ function typewrite() {
 
 onMounted(() => {
   if (!el.value) return
-  const observer = new IntersectionObserver(
+  observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           if (!shown.value) {
             shown.value = true
-            setTimeout(() => {
+            scheduleTimer(() => {
               visible.value = true
               if (!typed.value) {
                 typed.value = true
-                setTimeout(() => typewrite(), 300)
+                scheduleTimer(() => typewrite(), 300)
               }
             }, 80)
           } else {
@@ -70,6 +84,11 @@ onMounted(() => {
     { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
   )
   observer.observe(el.value)
+})
+
+onUnmounted(() => {
+  clearTimers()
+  observer?.disconnect()
 })
 </script>
 
@@ -242,17 +261,31 @@ onMounted(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .memory-node {
+    margin-bottom: 24px;
+  }
   .memory-node.left,
   .memory-node.right {
     flex-direction: row;
     padding-right: 0;
-    padding-left: 50px;
+    padding-left: 44px;
     transform: translateY(20px);
   }
   .memory-node.visible { transform: translateY(0); }
-  .node-dot { left: 20px; }
+  .node-dot { left: 16px; width: 12px; height: 12px; top: 20px; }
   .node-line { display: none; }
   .memory-node.left .node-idx,
-  .memory-node.right .node-idx { right: 16px; left: auto; }
+  .memory-node.right .node-idx { right: 12px; left: auto; font-size: 0.6rem; }
+  .node-card {
+    padding: 16px 18px;
+    border-radius: 16px;
+  }
+  .cat-tag {
+    padding: 2px 10px;
+    font-size: 0.65rem;
+    margin-bottom: 8px;
+  }
+  .node-time { font-size: 0.65rem; margin-bottom: 10px; }
+  .typewriter-text { font-size: 0.92rem; line-height: 1.75; }
 }
 </style>
